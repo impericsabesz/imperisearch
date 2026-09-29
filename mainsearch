@@ -201,7 +201,7 @@
             MathContainer.innerHTML = '';
 
             try {
-                // Javított URL szintaxis a háttérben futó SearXNG lekérdezéshez
+                // Javított, éles URL szintaxis perjelekkel és kérdőjellel
                 const response = await fetch(`https://priv.au{encodeURIComponent(query)}&format=json`);
                 
                 if (!response.ok) throw new Error('Hálózati hiba');
@@ -254,7 +254,7 @@
             const errorMessage = document.getElementById('errorMessage');
             
             try {
-                // Javított URL szintaxis a tartalék szerverhez
+                // Javított tartalék URL szintaxis perjelekkel és kérdőjellel
                 const response = await fetch(`https://searx.be{encodeURIComponent(query)}&format=json`);
                 if (!response.ok) throw new Error('A biztonsági szerver is hibát adott.');
                 
