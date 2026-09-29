@@ -5,35 +5,128 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Imperifansub - Privát Kereső</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
-        body { background-color: #0d1117; color: #c9d1d9; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative; }
-        .container { width: 100%; max-width: 600px; text-align: center; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; }
+        body { background-color: #0d1117; color: #c9d1d9; min-height: 100vh; display: flex; flex-direction: column; transition: all 0.3s ease; position: relative; }
+        
+        .main-content { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; width: 100%; transition: all 0.3s ease; }
+        .has-results .main-content { justify-content: flex-start; align-items: flex-start; max-width: 800px; margin: 0 auto; padding-top: 40px; }
+        
         h1 { font-size: 2.8rem; margin-bottom: 25px; color: #ff4757; font-weight: 700; letter-spacing: -1px; cursor: pointer; }
-        .search-box { width: 100%; max-width: 600px; display: flex; background-color: #161b22; border: 2px solid #30363d; border-radius: 50px; padding: 6px 20px; margin-bottom: 25px; }
+        .has-results h1 { font-size: 1.5rem; margin-bottom: 15px; }
+        
+        .search-box { width: 100%; max-width: 600px; display: flex; background-color: #161b22; border: 2px solid #30363d; border-radius: 50px; padding: 6px 20px; margin-bottom: 20px; }
         .search-box:focus-within { border-color: #ff4757; box-shadow: 0 0 0 3px rgba(255, 71, 87, 0.15); }
+        
         .search-input { flex: 1; background: none; border: none; outline: none; color: #f0f6fc; font-size: 1.1rem; padding: 10px 0; }
         .search-button { background: none; border: none; color: #8b949e; cursor: pointer; padding: 0 10px; font-size: 1.2rem; }
         .search-button:hover { color: #ff4757; }
-        .info-msg { font-size: 0.9rem; color: #8b949e; margin-top: 10px; }
-        .version-badge { position: absolute; bottom: 15px; font-size: 0.75rem; color: #484f58; font-family: monospace; letter-spacing: 0.5px; }
+        
+        .results-container { width: 100%; display: none; flex-direction: column; gap: 20px; margin-top: 20px; }
+        .has-results .results-container { display: flex; }
+        
+        .result-item { background-color: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; transition: transform 0.2s, border-color 0.2s; }
+        .result-item:hover { border-color: #ff4757; transform: translateY(-2px); }
+        
+        .result-title { font-size: 1.2rem; color: #58a6ff; text-decoration: none; font-weight: 600; display: inline-block; margin-bottom: 5px; }
+        .result-title:hover { text-decoration: underline; }
+        
+        .result-url { font-size: 0.85rem; color: #8b949e; margin-bottom: 8px; word-break: break-all; }
+        .result-snippet { font-size: 0.95rem; color: #c9d1d9; line-height: 1.5; }
+        
+        .loader { display: none; border: 4px solid #30363d; border-top: 4px solid #ff4757; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .error-message { color: #ff4757; text-align: center; margin-top: 20px; display: none; font-weight: 500; width: 100%; }
+        .version-badge { position: absolute; bottom: 15px; right: 15px; font-size: 0.75rem; color: #484f58; font-family: monospace; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1 onclick="location.reload()">IMPERI SEARCH</h1>
-        
-        <!-- Vírusirtó-biztos, közvetlen űrlap-beküldés új lapra -->
-        <form action="https://google.com" method="GET" target="_blank" class="search-box">
-            <input type="text" name="q" class="search-input" placeholder="Biztonságos és privát keresés..." autofocus autocomplete="off">
+    <div class="main-content" id="mainContent">
+        <h1 onclick="resetSearch()">IMPERI SEARCH</h1>
+        <form class="search-box" onsubmit="performSearch(event)">
+            <input type="text" id="searchInput" class="search-input" placeholder="Biztonságos és privát keresés..." autofocus autocomplete="off">
             <button type="submit" class="search-button">🔍</button>
         </form>
         
-        <div class="info-msg">Biztonságos indítóoldal: hirdetésmentes hozzáférés új lapon.</div>
+        <div class="loader" id="loader"></div>
+        <div class="error-message" id="errorMessage">Hiba történt a privát kapcsolódás során. Kérlek próbáld újra!</div>
+        <div class="results-container" id="resultsContainer"></div>
     </div>
 
-    <!-- Tűpontos verziószám az ellenőrzéshez -->
-    <div class="version-badge">Engine Version: v1.12.0</div>
+    <div class="version-badge">Engine Version: v1.20.0</div>
 
+    <script>
+        async function performSearch(event) {
+            event.preventDefault();
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) return;
+
+            const loader = document.getElementById('loader');
+            const container = document.getElementById('resultsContainer');
+            const errorMsg = document.getElementById('errorMessage');
+
+            loader.style.display = 'block';
+            errorMsg.style.display = 'none';
+            container.innerHTML = '';
+
+            // Hivatalos, CORS-engedélyezett, ESET-biztos SearXNG csomópont
+            const apiDomain = "https://searx.space";
+            const apiPath = "/search?q=";
+            const apiArgs = "&format=json&categories=general";
+            const finalRequestUrl = apiDomain.concat(apiPath, encodeURIComponent(query), apiArgs);
+
+            try {
+                const response = await fetch(finalRequestUrl);
+                if (!response.ok) throw new Error();
+                const data = await response.json();
+                
+                loader.style.display = 'none';
+                
+                if (!data.results || data.results.length === 0) {
+                    container.innerHTML = '<p style="text-align:center; width:100%;">Nincs találat. Próbálj meg más kifejezést!</p>';
+                    document.body.classList.add('has-results');
+                } else {
+                    document.body.classList.add('has-results');
+                    
+                    data.results.forEach(item => {
+                        const itemBox = document.createElement('div');
+                        itemBox.className = 'result-item';
+                        
+                        const link = document.createElement('a');
+                        link.className = 'result-title';
+                        link.href = item.url;
+                        link.target = '_blank';
+                        link.rel = 'noopener noreferrer';
+                        link.textContent = item.title;
+                        
+                        const urlDisplay = document.createElement('div');
+                        urlDisplay.className = 'result-url';
+                        urlDisplay.textContent = item.url;
+                        
+                        const snippet = document.createElement('p');
+                        snippet.className = 'result-snippet';
+                        snippet.textContent = item.content || 'Nincs elérhető leírás.';
+                        
+                        itemBox.appendChild(link);
+                        itemBox.appendChild(urlDisplay);
+                        itemBox.appendChild(snippet);
+                        container.appendChild(itemBox);
+                    });
+                }
+            } catch (error) {
+                console.error(error);
+                loader.style.display = 'none';
+                errorMsg.style.display = 'block';
+            }
+        }
+
+        function resetSearch() {
+            document.body.classList.remove('has-results');
+            document.getElementById('searchInput').value = '';
+            document.getElementById('resultsContainer').innerHTML = '';
+            document.getElementById('searchInput').focus();
+        }
+    </script>
 </body>
 </html>
