@@ -21,7 +21,6 @@
             transition: all 0.3s ease;
         }
 
-        /* Középre zárt nézet (amikor még nincs találat) */
         .main-content {
             flex: 1;
             display: flex;
@@ -32,7 +31,6 @@
             transition: all 0.3s ease;
         }
 
-        /* Ha vannak találatok, felugrik a fejlécbe */
         .has-results .main-content {
             justify-content: flex-start;
             align-items: flex-start;
@@ -45,7 +43,7 @@
         h1 {
             font-size: 2.8rem;
             margin-bottom: 25px;
-            color: #ff4757; /* Megtartottuk a régi fansub piros márkaszínt */
+            color: #ff4757;
             font-weight: 700;
             letter-spacing: -1px;
             transition: all 0.3s ease;
@@ -97,7 +95,6 @@
             color: #ff4757;
         }
 
-        /* Találati lista stílusa */
         .results-container {
             width: 100%;
             display: none;
@@ -149,7 +146,6 @@
             line-height: 1.5;
         }
 
-        /* Töltőképernyő (Loader) */
         .loader {
             display: none;
             border: 4px solid #30363d;
@@ -187,11 +183,8 @@
         <div class="loader" id="loader"></div>
         <div class="error-message" id="errorMessage">Hiba történt a keresés során. Próbáld újra!</div>
 
-        <div class="results-container" id="resultsContainer">
-            <!-- A találatok JavaScript segítségével ide fognak bekerülni -->
-        </div>
+        <div class="results-container" id="resultsContainer"></div>
     </div>
-
     <script>
         async function performSearch(event) {
             event.preventDefault();
@@ -208,7 +201,7 @@
             resultsContainer.innerHTML = '';
 
             try {
-                // Lekérjük a találatokat az elsődleges működő privát példányról JSON formátumban
+                // Lekérjük a találatokat az elsődleges működő privát csomópontról JSON formátumban
                 const response = await fetch(`https://priv.au{encodeURIComponent(query)}&format=json`);
                 
                 if (!response.ok) throw new Error('Hálózati hiba');
@@ -254,7 +247,7 @@
 
             } catch (error) {
                 console.error(error);
-                // Ha az elsődleges szerver épp nem elérhető, automatikusan megpróbáljuk a másodlagost
+                // Ha az elsődleges szerver nem elérhető, automatikusan megpróbáljuk a másodlagost
                 fallbackSearch(query);
             }
         }
@@ -287,3 +280,23 @@
                     });
                 } else {
                     resultsContainer.innerHTML = '<p style="text-align:center;">Nincs találat a másodlagos motorban sem.</p>';
+                    document.body.classList.add('has-results');
+                }
+            } catch (e) {
+                console.error(e);
+                loader.style.display = 'none';
+                errorMessage.style.display = 'block';
+                errorMessage.textContent = "Minden privát szerver túlterhelt. Kérlek, próbáld meg újra pár másodperc múlva!";
+            }
+        }
+
+        // Visszaállítja a kezdőképernyőt, ha a logóra kattintasz
+        function resetSearch() {
+            document.body.classList.remove('has-results');
+            document.getElementById('searchInput').value = '';
+            document.getElementById('resultsContainer').innerHTML = '';
+            document.getElementById('searchInput').focus();
+        }
+    </script>
+</body>
+</html>
