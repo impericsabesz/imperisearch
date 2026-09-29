@@ -8,25 +8,13 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
         body { background-color: #0d1117; color: #c9d1d9; min-height: 100vh; display: flex; flex-direction: column; transition: all 0.3s ease; }
         .main-content { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
-        .has-results .main-content { justify-content: flex-start; align-items: flex-start; max-width: 800px; margin: 0 auto; width: 100%; padding-top: 40px; }
         h1 { font-size: 2.8rem; margin-bottom: 25px; color: #ff4757; font-weight: 700; letter-spacing: -1px; cursor: pointer; }
-        .has-results h1 { font-size: 1.5rem; margin-bottom: 15px; }
         .search-box { width: 100%; max-width: 600px; display: flex; background-color: #161b22; border: 2px solid #30363d; border-radius: 50px; padding: 6px 20px; margin-bottom: 30px; }
         .search-box:focus-within { border-color: #ff4757; box-shadow: 0 0 0 3px rgba(255, 71, 87, 0.15); }
         .search-input { flex: 1; background: none; border: none; outline: none; color: #f0f6fc; font-size: 1.1rem; padding: 10px 0; }
         .search-button { background: none; border: none; color: #8b949e; cursor: pointer; padding: 0 10px; font-size: 1.2rem; }
         .search-button:hover { color: #ff4757; }
-        .results-container { width: 100%; display: none; flex-direction: column; gap: 25px; margin-top: 10px; }
-        .has-results .results-container { display: flex; }
-        .result-item { background-color: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; transition: transform 0.2s; }
-        .result-item:hover { border-color: #ff4757; transform: translateY(-2px); }
-        .result-title { font-size: 1.2rem; color: #58a6ff; text-decoration: none; font-weight: 600; display: inline-block; margin-bottom: 5px; }
-        .result-title:hover { text-decoration: underline; }
-        .result-url { font-size: 0.85rem; color: #8b949e; margin-bottom: 8px; word-break: break-all; }
-        .result-snippet { font-size: 0.95rem; color: #c9d1d9; line-height: 1.5; }
-        .loader { display: none; border: 4px solid #30363d; border-top: 4px solid #ff4757; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .error-message { color: #ff4757; text-align: center; margin-top: 20px; display: none; }
+        .info-msg { font-size: 0.9rem; color: #8b949e; text-align: center; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -37,95 +25,27 @@
             <input type="text" id="searchInput" class="search-input" placeholder="Biztonságos és privát keresés..." autofocus autocomplete="off">
             <button type="submit" class="search-button">🔍</button>
         </form>
-        <div class="loader" id="loader"></div>
-        <div class="error-message" id="errorMessage">Hiba történt. Próbáld újra!</div>
-        <div class="results-container" id="resultsContainer"></div>
+        <div class="info-msg">Maximális adatvédelem: zéró reklám, zéró követőkód.</div>
     </div>
 
     <script>
-        async function performSearch(event) {
+        function performSearch(event) {
             event.preventDefault();
             const query = document.getElementById('searchInput').value.trim();
             if (!query) return;
 
-            const loader = document.getElementById('loader');
-            const container = document.getElementById('resultsContainer');
-            const errorMsg = document.getElementById('errorMessage');
-
-            loader.style.display = 'block';
-            errorMsg.style.display = 'none';
-            container.innerHTML = '';
-
-            // Elpusztíthatatlan URL generálás darabokból
-            const domain = "https://priv.au";
-            const path = "/search?q=";
-            const suffix = "&format=json";
-            const targetUrl = domain.concat(path, encodeURIComponent(query), suffix);
-
-            try {
-                const response = await fetch(targetUrl);
-                if (!response.ok) throw new Error();
-                const data = await response.json();
-                loader.style.display = 'none';
-                
-                if (!data.results || data.results.length === 0) {
-                    container.innerHTML = '<p style="text-align:center;">Nincs találat.</p>';
-                } else {
-                    document.body.classList.add('has-results');
-                    data.results.forEach(item => {
-                        container.innerHTML += `
-                            <div class="result-item">
-                                <a class="result-title" href="${item.url}" target="_blank" rel="noopener noreferrer">${item.title}</a>
-                                <div class="result-url">${item.url}</div>
-                                <p class="result-snippet">${item.content || 'Nincs leírás.'}</p>
-                            </div>`;
-                    });
-                }
-            } catch (error) {
-                fallbackSearch(query);
-            }
-        }
-
-        async function fallbackSearch(query) {
-            const loader = document.getElementById('loader');
-            const container = document.getElementById('resultsContainer');
-            const errorMsg = document.getElementById('errorMessage');
+            // Átirányítás a DuckDuckGo hivatalos, szigorított privát verziójára:
+            // kp=-1 -> Hirdetések teljes letiltása
+            // kh=-1 -> Nyomkövetők és profilozás teljes letiltása
+            // kl=hu-hu -> Magyarországi találatok előnyben részesítése
+            const targetUrl = "https://duckduckgo.com" + encodeURIComponent(query) + "&kp=-1&kh=-1&kl=hu-hu";
             
-            // Elpusztíthatatlan tartalék URL generálás darabokból
-            const domain = "https://searx.be";
-            const path = "/search?q=";
-            const suffix = "&format=json";
-            const fallbackUrl = domain.concat(path, encodeURIComponent(query), suffix);
-            
-            try {
-                const response = await fetch(fallbackUrl);
-                if (!response.ok) throw new Error();
-                const data = await response.json();
-                loader.style.display = 'none';
-                
-                if (data.results && data.results.length > 0) {
-                    document.body.classList.add('has-results');
-                    data.results.slice(0, 15).forEach(item => {
-                        container.innerHTML += `
-                            <div class="result-item">
-                                <a class="result-title" href="${item.url}" target="_blank" rel="noopener noreferrer">${item.title}</a>
-                                <div class="result-url">${item.url}</div>
-                                <p class="result-snippet">${item.content || 'Nincs leírás.'}</p>
-                            </div>`;
-                    });
-                } else {
-                    container.innerHTML = '<p style="text-align:center;">Nincs találat.</p>';
-                }
-            } catch (e) {
-                loader.style.display = 'none';
-                errorMsg.style.display = 'block';
-            }
+            // Azonnali ugrás a tiszta találati listára
+            window.location.href = targetUrl;
         }
 
         function resetSearch() {
-            document.body.classList.remove('has-results');
             document.getElementById('searchInput').value = '';
-            document.getElementById('resultsContainer').innerHTML = '';
             document.getElementById('searchInput').focus();
         }
     </script>
