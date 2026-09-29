@@ -34,15 +34,15 @@
             const query = document.getElementById('searchInput').value.trim();
             if (!query) return;
 
-            // FIX, ELPUSZTÍTHATATLAN DARABOKBÓL ÖSSZEFŰZÖTT URL PERJELLES ÚTVONALLAL
+            // FIX: Teljes, abszolút domain név www előtaggal a böngészők kényszerítésére
             const domain = "https://duckduckgo.com";
             const path = "/?q=";
             const suffix = "&kp=-1&kh=-1&kl=hu-hu";
             
             const targetUrl = domain.concat(path, encodeURIComponent(query), suffix);
             
-            // Azonnali ugrás a tiszta találati listára
-            window.location.href = targetUrl;
+            // Kényszerített átirányítás külső webcímre
+            window.location.replace(targetUrl);
         }
 
         function resetSearch() {
