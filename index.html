@@ -34,11 +34,12 @@
             const query = document.getElementById('searchInput').value.trim();
             if (!query) return;
 
-            // Átirányítás a DuckDuckGo hivatalos, szigorított privát verziójára:
-            // kp=-1 -> Hirdetések teljes letiltása
-            // kh=-1 -> Nyomkövetők és profilozás teljes letiltása
-            // kl=hu-hu -> Magyarországi találatok előnyben részesítése
-            const targetUrl = "https://duckduckgo.com" + encodeURIComponent(query) + "&kp=-1&kh=-1&kl=hu-hu";
+            // FIX, ELPUSZTÍTHATATLAN DARABOKBÓL ÖSSZEFŰZÖTT URL PERJELLES ÚTVONALLAL
+            const domain = "https://duckduckgo.com";
+            const path = "/?q=";
+            const suffix = "&kp=-1&kh=-1&kl=hu-hu";
+            
+            const targetUrl = domain.concat(path, encodeURIComponent(query), suffix);
             
             // Azonnali ugrás a tiszta találati listára
             window.location.href = targetUrl;
